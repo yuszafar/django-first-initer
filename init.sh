@@ -32,13 +32,11 @@ echo "
 [Unit]
 Description=gunicorn daemon
 After=network.target
-
 [Service]
 User=$USER
 Group=www-data
 WorkingDirectory=$(pwd)
 ExecStart=$(pwd)/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:$(pwd)/$SERVICE_NAME.sock $WSGI_FOLDER_NAME.wsgi:application
-
 [Install]
 WantedBy=multi-user.target
 " > /etc/systemd/system/$SERVICE_NAME.service
@@ -51,26 +49,30 @@ sudo systemctl enable $SERVICE_NAME
 echo "
 server {
     server_name $DOMAIN;
-
     client_max_body_size 10M;
-
     location /static {
         alias $(pwd)/$STATICFILE_DIR_NAME;
     }
-
     location /media {
         alias $(pwd)/$MEDIA_DIR_NAME;
     }
-
     location / {
         include proxy_params;
         proxy_pass http://unix:$(pwd)/$SERVICE_NAME.sock;
     }
-
 }
 " > /etc/nginx/sites-available/$DOMAIN
 
+
 sudo ln -s /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/
 
+#init restart.sh
+echo "
+sudo venv/bin/python manage.py collectstatic --noinput
+sudo venv/bin/python manage.py makemigrations
+sudo venv/bin/python manage.py migrate
+sudo systemctl daemon-reload
+sudo systemctl restart $SERVICE_NAME
+" > restart.sh
 #restart nginx
 sudo systemctl restart nginx
