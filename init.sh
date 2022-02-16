@@ -66,6 +66,10 @@ server {
 
 sudo ln -s /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/
 
+# init certbot
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d $DOMAIN
+
 #init restart.sh
 echo "
 sudo venv/bin/python manage.py collectstatic --noinput
